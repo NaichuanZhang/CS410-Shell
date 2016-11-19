@@ -7,6 +7,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #define MAX_COUNT 100
+
 void interruptHandler(int);
 int isSeq(char *);
 void pipes(int,int);
@@ -93,16 +94,16 @@ void pipes(int i, int pipecount){
 int main(int argc, char *argv[]){
     int commands,pipecount,i=0;
     int fpfd[3];
-    char *token,*command,line;
+    char *token,*command;
     pid_t child;
-    char *cmd,*str_copy; // for pipe functionality
+    char cmd[MAX_COUNT],str_copy[MAX_COUNT]; // for pipe functionality
     FILE *fp;
     
         while(1){
  
         printf("myshell> ");
         
-	if(!fgets(cmd, MAX_COUNT, stdin)){
+	if(fgets(cmd, MAX_COUNT, stdin) == NULL){
 		break;
 	}
 
@@ -111,7 +112,7 @@ int main(int argc, char *argv[]){
             return 0;
          }
 */
-	str_copy = cmd;
+	strcpy(str_copy,cmd);
           
         token = strtok(str_copy, " ");
          
@@ -124,11 +125,14 @@ int main(int argc, char *argv[]){
         
 	    commands++;  
             token = strtok(NULL, " ");
-            if(strcmp(token, "|") == 0){           
-              	pipecount++;
-            }
+
+	    if(!token){
+          	  if(strcmp(token, "|") == 0){           
+              		pipecount++;
+           	   }
+		}
           
-          	}
+          }
         //***************************************************
                 
 
