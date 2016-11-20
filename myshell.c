@@ -95,6 +95,7 @@ int main(int argc, char *argv[]){
     char cmd[MAX_COUNT],copy[MAX_COUNT];
     pid_t child;
     FILE *fp;
+    char *ars[1];
     
         while(1){
  
@@ -142,7 +143,7 @@ int main(int argc, char *argv[]){
 		child = fork();
             if(child==0){ //child (fork successful)
             	
-              execvp(token,token); //not the right syntax, but call command here
+              execvp(token,ars); //not the right syntax, but call command here
               
               }
             }
@@ -171,14 +172,14 @@ int main(int argc, char *argv[]){
                 //write stuff (redirect stdout of first command with dup2)
 
                		dup2(fpfd[0], STDOUT_FILENO);
+                	fclose(fp);
 			child = fork();
                     	if (child == 0){ // make child process
-                		execvp(command,command);
+                		execvp(command,ars);
                     	}
                     	else{
                     	waitpid(child);
                     	}
-                	fclose(fp);
                     	}
 			else{
 				printf("Panic: So many commands D:\n");
@@ -205,10 +206,11 @@ int main(int argc, char *argv[]){
 
                 //read in stuff (redirect stdin of first command with dup2)
 		dup2(fpfd[1], STDIN_FILENO);
+                fclose(fp);
                     child = fork();
                     if (child == 0){ // make child process
                 				
-                      execvp(command,command);
+                      execvp(command,ars);
                     }
                     
                     else{
@@ -236,16 +238,14 @@ int main(int argc, char *argv[]){
                 //write stuff (redirect stdout of first command with dup2)
 
                 dup2(fpfd[2], STDERR_FILENO);
+                fclose(fp);
                  child = fork();
                 if (child == 0){ // make child process
-                    execvp(command,command);
+                    execvp(command,ars);
                   }
                   else{
                   waitpid(child);
                   }
-              
-              	fclose(fp);
-               
               	}
                     
               if (strcmp(token, "|") == 0){
@@ -257,10 +257,11 @@ int main(int argc, char *argv[]){
 		else{ //only command, execute
 			child = fork();
                 	if (child == 0){ // make child process
-                		execvp(command,command);
+				printf("%s\n",command);
+                		execvp(command,ars);
                     	}
                     	else{
-                    	waitpid(child);
+                    	child = waitpid(child);
                     	}
 		}
                 
