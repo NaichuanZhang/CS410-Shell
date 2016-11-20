@@ -95,7 +95,7 @@ int main(int argc, char *argv[]){
     char cmd[MAX_COUNT],copy[MAX_COUNT];
     pid_t child;
     FILE *fp;
-    char *ars[1];
+    char *ars[2];
     
         while(1){
  
@@ -136,6 +136,8 @@ int main(int argc, char *argv[]){
                 
 
 	token = strtok(cmd," ");
+	ars[0] = token;
+	ars[1] = NULL;
         while(token){ // checking the commands
         
           if(isSeq(token)){ 
