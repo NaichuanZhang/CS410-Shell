@@ -10,13 +10,11 @@
 
 void interruptHandler(int);
 int isSeq(char *);
-void pipes(int,int);
+void pipes(int,int,char*);
 
 void interruptHandler(int signum){ //close foreground process. 
 
-}
-void closeTerminal(int signum){ //ctrl-d; exit terminal. AHHHHHHH how do we know if the user has entered ctrl-d??	Can signal with kill() but donn't know how to track user input that isn't text
-
+	printf("this is me interrupting your foreground process");
 
 }
 
@@ -29,7 +27,7 @@ int isSeq(char *token){	//checks last character to determine if the command is i
 }
 
 
-void pipes(int i, int pipecount){
+void pipes(int i, int pipecount,char *token){
 /*
   //code from lecture to handle piping
      int fd[MAX_COUNT][2];
@@ -72,13 +70,11 @@ void pipes(int i, int pipecount){
                 
               }
         	}
-      }
-      
+       
     //execute command in child
     
-    execvp(token, argv); // dont close fds on execve
+    execvp(token, token[1]); // dont close fds on execve
     
-
 //    if(!pipecount){
     
 //    for(int i = 0;i < commands; i++)
@@ -87,20 +83,23 @@ void pipes(int i, int pipecount){
   	
 
     waitpid(pid[i]);  //parent waits for child
-     
-*/    
-  }
+ */    
+    
+  }     
+
                     
 int main(int argc, char *argv[]){
     int commands,pipecount,i=0;
     int fpfd[3];
     char *token,*command;
+    char cmd[MAX_COUNT],copy[MAX_COUNT];
     pid_t child;
-    char cmd[MAX_COUNT],str_copy[MAX_COUNT]; // for pipe functionality
     FILE *fp;
     
         while(1){
  
+	signal(SIGINT, interruptHandler);
+
         printf("myshell> ");
         
 	if(fgets(cmd, MAX_COUNT, stdin) == NULL){
@@ -112,10 +111,9 @@ int main(int argc, char *argv[]){
             return 0;
          }
 */
-	strcpy(str_copy,cmd);
+	strcpy(copy,cmd);
           
-        token = strtok(str_copy, " ");
-         
+        token = strtok(copy, " ");
           //********************************argv*******************
       		 
           // functionality for pipe code : COUNT THE PIPES
@@ -124,13 +122,13 @@ int main(int argc, char *argv[]){
           while(token){
         
 	    commands++;  
-            token = strtok(NULL, " ");
-
-	    if(!token){
-          	  if(strcmp(token, "|") == 0){           
-              		pipecount++;
-           	   }
+ 
+            if(strcmp(token, "|") == 0){           
+           		pipecount++;
 		}
+
+	    token = strtok(NULL, " ");
+
           
           }
         //***************************************************
@@ -141,45 +139,53 @@ int main(int argc, char *argv[]){
         
           if(isSeq(token)){ 
           
-            if((child=fork())==0){ //child (fork successful)
+		child = fork();
+            if(child==0){ //child (fork successful)
             	
-              execvp(token,argv); //not the right syntax, but call command here
+              execvp(token,token); //not the right syntax, but call command here
               
               }
             }
             else{ //parent, keep moving on
             
-            	command = token;
+              command = token;
               
               token = strtok(NULL," ");
 
-              if ((strcmp(token, ">") == 0) || (strcmp(token, "1>") == 0)){
+		if(token){
+              	if ((strcmp(token, ">") == 0) || (strcmp(token, "1>") == 0)){
 
-                token = strtok(NULL," ");
+                	token = strtok(NULL," ");
                 //open file if exists, otherwise create. pipe stdout into it
-                
-		fp = fopen(token, "w+");
+                	if(token){
+			fp = fopen(token, "w+");
 
-                if (!fp){
+                	if (!fp){
 
-                  fprintf( stderr, "myshell error: can't open file.");
-                  exit(1);
-                }
+                 	 fprintf( stderr, "myshell error: can't open file.");
+                  	exit(1);
+                	}
 
-		pipe(fpfd);
+			pipe(fpfd);
 
                 //write stuff (redirect stdout of first command with dup2)
 
-                dup2(fpfd[0], STDOUT_FILENO);
-                    if ((child = fork()) == 0){ // make child process
-                	execvp(command,argv);
-                    }
-                    else{
-                    waitpid(child);
-                    }
-                fclose(fp);
-                    
-              }
+               		dup2(fpfd[0], STDOUT_FILENO);
+			child = fork();
+                    	if (child == 0){ // make child process
+                		execvp(command,command);
+                    	}
+                    	else{
+                    	waitpid(child);
+                    	}
+                	fclose(fp);
+                    	}
+			else{
+				printf("Panic: So many commands D:\n");
+			}
+		}
+
+				
               
               if (strcmp(token, "<") == 0){
               
@@ -199,10 +205,10 @@ int main(int argc, char *argv[]){
 
                 //read in stuff (redirect stdin of first command with dup2)
 		dup2(fpfd[1], STDIN_FILENO);
-                    
-                    if ((child = fork()) == 0){ // make child process
+                    child = fork();
+                    if (child == 0){ // make child process
                 				
-                      execvp(command,argv);
+                      execvp(command,command);
                     }
                     
                     else{
@@ -230,9 +236,9 @@ int main(int argc, char *argv[]){
                 //write stuff (redirect stdout of first command with dup2)
 
                 dup2(fpfd[2], STDERR_FILENO);
-                  
-                if ((child = fork()) == 0){ // make child process
-                    execvp(command,argv);
+                 child = fork();
+                if (child == 0){ // make child process
+                    execvp(command,command);
                   }
                   else{
                   waitpid(child);
@@ -241,17 +247,28 @@ int main(int argc, char *argv[]){
               	fclose(fp);
                
               	}
-              }
                     
               if (strcmp(token, "|") == 0){
               	
                 	i++;
-                	pipes(i, pipecount);
+                	pipes(i, pipecount,token);
               }
+	}
+		else{ //only command, execute
+			child = fork();
+                	if (child == 0){ // make child process
+                		execvp(command,command);
+                    	}
+                    	else{
+                    	waitpid(child);
+                    	}
+		}
                 
                
               	}
               }
+	}
+}
           
               
-       }
+
