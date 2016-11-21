@@ -84,12 +84,4 @@ int main(int argc, char* argv[]){
 	return 0;
 }
 
-int atoi( const char *string) {
-    int i;
-    int len = strlen(string);
-    int result = 0;
-    for (int i = 0; i < len; i++) {
-        result += (string[i]-48)*pow(10,(len-i-1));
-    }
-    return result;
-}
+
